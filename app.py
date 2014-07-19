@@ -39,7 +39,6 @@ def call_number(number):
  
 @app.route("/", methods=['GET', 'POST'])
 def hello():
-    print request.values
     from_number = request.values.get('From', None)
     if from_number in callers:
         caller = callers[from_number]
@@ -64,8 +63,21 @@ def new():
 
 @app.route('/say', methods=['GET', 'POST'])
 def say():
-  print "say"
-  return "say"
+  resp = twilio.twiml.Response()
+  callid = request.values.get('CallSid', '')
+  global text1
+  global text2
+  if caller1 == callid and text1 != "":
+    # Translate text with Yandex
+    resp.say(text1)
+    text1 = ""
+  elif caller2 == callid and text2 != "":
+    # Translate text with Yandex
+    resp.say(text2)
+    text2 = ""
+  else:
+    resp.redirect(url="/wait")
+  return str(resp)
 
 @app.route('/wait', methods=['GET', 'POST'])
 def wait():
