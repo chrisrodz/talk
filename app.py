@@ -16,11 +16,13 @@ callers = {
 def call_number(number):
   account = os.environ.get('TWILIO_SID', '')
   token = os.environ.get('TWILIO_TOKEN', '')
+  twilio_number = os.environ.get('TWILIO_NUMBER', '')
+  ngrok_url = os.environ.get('TWILIO_NGROK', '')
   client = TwilioRestClient(account, token)
 
   call = client.calls.create(to = number,
-                            from_ = "4157262661",
-                            url = "https://2752e38f.ngrok.com/new")
+                            from_ = twilio_number,
+                            url = ngrok_url + "/new")
   return call.sid
  
 @app.route("/", methods=['GET', 'POST'])
