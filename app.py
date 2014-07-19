@@ -5,13 +5,25 @@ from flask import Flask, request, redirect
 
 from twilio.rest import TwilioRestClient
 import twilio.twiml
- 
+
+############
+# Init
+############
 app = Flask(__name__)
  
 callers = {
     "+17875663317": "Christian",
-    "+17879413774": "X"
+    "+17879413774": "X",
+    "+17874629666": "Abimael"
 }
+
+lang1 = "en"
+lang2 = "en"
+caller1 = ""
+caller2 = ""
+text1 = ""
+text2 = ""
+
 
 def call_number(number):
   account = os.environ.get('TWILIO_SID', '')
@@ -26,7 +38,8 @@ def call_number(number):
   return call.sid
  
 @app.route("/", methods=['GET', 'POST'])
-def hello_monkey():
+def hello():
+    print request.values
     from_number = request.values.get('From', None)
     if from_number in callers:
         caller = callers[from_number]
@@ -49,6 +62,23 @@ def new():
   resp.say("Hello, my love. You are awesome.")
   return str(resp)
 
+@app.route('/say', methods=['GET', 'POST'])
+def say():
+  print "say"
+  return "say"
+
+@app.route('/wait', methods=['GET', 'POST'])
+def wait():
+  print "wait"
+  return "wait"
+
+@app.route('/record', methods=['GET', 'POST'])
+def record():
+  print "record"
+  return "record"
+
+
+### Tutorial methods
 @app.route("/handle-key", methods=['GET', 'POST'])
 def handle_key():
     """Handle key press from a user."""
