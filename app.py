@@ -72,7 +72,6 @@ def call_number(number):
 
 @app.route("/", methods=['GET', 'POST'])
 def hello():
-    print request.values
     global caller1
     caller1 = request.values.get('CallSid', None)
     from_number = request.values.get('From', None)
@@ -128,6 +127,8 @@ def wait():
     resp.pause(length=10)
     resp.say('Press one anytime to respond with a message')
     resp.redirect('/wait')
+
+
   if sid == caller1:
     if text1 != "": 
       resp.redirect('/say')
@@ -136,18 +137,14 @@ def wait():
         resp.redirect('/wait')
   elif sid == caller2:
     if text2 != "":
-      print "Nos fuimos pa say"
       resp.redirect('/say')
     elif text2 == "":
       with resp.gather(numDigits="1", action="/record", method="POST", timeout="5") as g:
         resp.redirect('/wait')
-  print "wait"
   return str(resp)
 
 @app.route('/record', methods=['GET', 'POST'])
 def record():
-
-  print "record"
   digit_pressed = request.values.get('Digits', None)
   resp = twilio.twiml.Response()
   if digit_pressed == "1":
@@ -156,15 +153,7 @@ def record():
     resp.say("Say you message after the tone.")
 
     # record
-    resp.record(timeout="2" , action="/wait")
-
-    if(caller == caller1):
-      print "Caller 1 metiendole"
-      handle_transcribed("1")
-
-    elif(caller == caller2):
-      print "Caller 2 charriando"
-      handle_transcribed("2")
+    resp.record(timeout="1" , action="/transcribe")
 
     return str(resp)
 
@@ -173,6 +162,24 @@ def record():
     print "Nadie hablo. Estan charriando"
     resp.redirect('/wait')
     return str(resp)
+
+@app.route('/transcribe', methods=['GET', 'POST'])
+def transcribe():
+  resp = twilio.twiml.Response()
+  recording = request.values.get('RecordingUrl', None)
+  transcribed = speech_to_text(recording)
+
+  callid = request.values.get('CallSid', None)
+  if callid == caller1:
+    global text2
+    text2 = transcribed
+  elif callid == caller2:
+    global text1
+    text1 = transcribed
+
+  resp.say("Message has been sent")
+  resp.redirect('/wait')
+  return str(resp)
 
 @app.route('/call', methods=['GET', 'POST'])
 def call():
