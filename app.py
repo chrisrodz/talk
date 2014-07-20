@@ -7,7 +7,7 @@
 from __future__ import with_statement, unicode_literals   # Only necessary for Python 2.5
 import os
 import json
-from flask import Flask, request, redirect
+from flask import Flask, request, redirect, render_template
 from twilio.rest import TwilioRestClient
 import twilio.twiml
 from twilio.util import TwilioCapability
@@ -254,6 +254,10 @@ def capability():
   token = capability.generate()
   print token
   return str(token)
+
+@app.route('/home')
+def casa():
+  return render_template('home.html')
 
 if __name__ == '__main__':
   app.run(debug=True)
