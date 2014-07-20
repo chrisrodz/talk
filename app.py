@@ -23,7 +23,7 @@ callers = {
     "+17874629666": "Abimael"
 }
 
-lang1 = "es"
+lang1 = "en"
 lang2 = "en"
 caller1 = ""
 caller2 = ""
@@ -76,31 +76,27 @@ def hello():
  
     return str(resp)
 
-@app.route('/new', methods=['GET', 'POST'])
-def new():
-  resp = twilio.twiml.Response()
-  resp.say("Hello, my love. You are awesome.")
-  return str(resp)
-
 @app.route('/say', methods=['GET', 'POST'])
 def say():
   resp = twilio.twiml.Response()
-  callid = request.values.get('CallSid', '')
+  callid = request.values.get('CallSid', None)
   global text1
   global text2
 
-  if caller1 == callid and text1 != "":
-    if lang1 != lang2:
-      text1 = translate_text(text1, lang2, lang1)
-    resp.say(text1, language=lang1)
-    text1 = ""
-  elif caller2 == callid and text2 != "":
-    if lang1 != lang2:
-      text2 = translate_text(text1, lang1, lang2)
-    resp.say(text2, language=lang2)
-    text2 = ""
-  else:
-    resp.redirect(url="/wait")
+  if caller1 == callid:
+    if text1:
+      # if lang1 != lang2:
+      #   text1 = translate_text(text1, lang2, lang1)
+      resp.say(text1, language=lang1)
+      text1 = ""
+  elif caller2 == callid:
+    if text2:
+      # if lang1 != lang2:
+      #   text2 = translate_text(text1, lang1, lang2)
+      resp.say(text2, language=lang2)
+      text2 = ""
+
+  resp.redirect("/wait")
   return str(resp)
 
 @app.route('/wait', methods=['GET', 'POST'])
@@ -110,18 +106,19 @@ def wait():
   if (request.values.get('CallSid', None) == caller1):
     # if text empty -> /say
     if text1 != "": 
-      resp.request('/say')
+      resp.redirect('/say')
     # <gather> -> record 
     elif text1 == "":
       with resp.gather(numDigits=1, action="/record", method="POST", timeout=5) as g:
         g.say("""Press one to start your message.""")
       resp.redirect('/wait')
   elif(request.values.get('CallSid', None) == caller2):
-    if text2 != "": 
-      resp.request('/say')
+    if text2 != "":
+      print "Nos fuimos pa say"
+      resp.redirect('/say')
     # <gather> -> record 
     elif text2 == "":
-      with resp.gather(numDigits=1, action="/record", method="POST", timeout=5) as g:
+      with resp.gather(numDigits="1", action="/record", method="POST", timeout="5") as g:
         g.say("""Press one to start your message.""")    
       resp.redirect('/wait')
   print "wait"
@@ -131,29 +128,30 @@ def wait():
 def record():
   print "record"
   digit_pressed = request.values.get('Digits', None)
-
+  resp = twilio.twiml.Response()
   if digit_pressed == "1":
-    resp = twilio.twiml.Response()
     caller = request.values.get('CallSid', None)
 
     resp.say("Say you message after the tone.")
 
     # record
-    resp.record(timeout = "2" , action = "/wait")
+    resp.record(timeout="2" , action="/wait")
 
     if(caller == caller1):
-
+      print "Caller 1 metiendole"
       handle_transcribed("1")
 
     elif(caller == caller2):
-
+      print "Caller 2 charriando"
       handle_transcribed("2")
 
     return str(resp)
 
   # if caller din't pressed anithing redirect 
   else:
-    return redirect("/wait")
+    print "Nadie hablo. Estan charriando"
+    resp.redirect('/wait')
+    return str(resp)
 
 @app.route('/call', methods=['GET', 'POST'])
 def call():
@@ -163,62 +161,30 @@ def call():
   resp.redirect('/wait')
   return str(resp)
 
-
-
-### Tutorial methods
 @app.route("/handle-key", methods=['GET', 'POST'])
 def handle_key():
     """Handle key press from a user."""
  
     digit_pressed = request.values.get('Digits', None)
     resp = twilio.twiml.Response()
-    resp.say("Calling ")
+    resp.say("Calling new number.")
 
     called_res = call_number(digit_pressed)
-    #resp.say("Call id is " + called_res)
     resp.redirect('/wait')
     return str(resp)
 
-    # if digit_pressed == "1":
-    #     resp = twilio.twiml.Response()
-    #     # Dial (310) 555-1212 - connect that number to the incoming caller.
-    #     resp.dial("+13105551212")
-    #     # If the dial fails:
-    #     resp.say("The call failed, or the remote party hung up. Goodbye.")
- 
-    #     return str(resp)
- 
-    # elif digit_pressed == "2":
-    #     resp = twilio.twiml.Response()
-    #     resp.say("Record your monkey howl after the tone.")
-    #     resp.record(maxLength="5", action="/handle-recording", transcribe="true", transcribeCallback="/handle-transcribed", timeout="2")
-    #     return str(resp)
- 
-    # # If the caller pressed anything but 1, redirect them to the homepage.
-    # else:
-    #     return redirect("/")
-
-@app.route("/handle-recording", methods=['GET', 'POST'])
-def handle_recording():
-    """Play back the caller's recording."""
- 
-    recording_url = request.values.get("RecordingUrl", None)
-    print recording_url
-    resp = twilio.twiml.Response()
-    resp.say("Goodbye.")
-    return str(resp)
 
 @app.route("/handle-transcribed", methods=['GET', 'POST'])
 def handle_transcribed(caller):
   """Print the transcribed text and say it back to the user"""
-
-  if(caller == "1"):
+  print "Handle transcribeeeeo"
+  if caller == "1":
     global text2
-    text2 = "Caller 1 speaked"
+    text2 = "Caller 1 spoke"
 
-  elif(caller == "2"):
+  elif caller == "2":
     global text1
-    text1 = "Caller 1 speaked"
+    text1 = "Caller 1 spoke"
 
 if __name__ == "__main__":
     app.run(debug=True)
