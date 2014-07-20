@@ -141,7 +141,7 @@ def say():
       text = text1.pop(0)
       if lang1 != lang2:
         text = translate_text(text, lang2, lang1) 
-      resp.say(text, language=lang1)
+      resp.say(text, language=lang1, voice="woman")
   elif caller2 == callid:
     if len(text2) > 0:
       text = text2.pop(0)
