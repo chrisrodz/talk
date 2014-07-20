@@ -1,14 +1,19 @@
+# ---------------
+# Imports
+# ---------------
+
 from __future__ import with_statement   # Only necessary for Python 2.5
-
 import os
+import json
 from flask import Flask, request, redirect
-
 from twilio.rest import TwilioRestClient
 import twilio.twiml
+from urllib import quote_plus
+import requests
 
-############
+# ---------------
 # Init
-############
+# ---------------
 app = Flask(__name__)
  
 callers = {
@@ -17,13 +22,22 @@ callers = {
     "+17874629666": "Abimael"
 }
 
-lang1 = "en"
+lang1 = "es"
 lang2 = "en"
 caller1 = ""
 caller2 = ""
 text1 = ""
 text2 = ""
+yandex_key = os.environ.get('YANDEX_API_KEY', '')
 
+# ---------------
+# Helpers
+# ---------------
+
+def translate_text(phrase, from_lang='en', dest_lang='es'):
+  url = "https://translate.yandex.net/api/v1.5/tr.json/translate?key=%s&lang=%s-%s&text=%s" % (yandex_key, from_lang, dest_lang, quote_plus(phrase))
+  translation = requests.get(url)
+  return json.loads(translation.content)['text'][0]
 
 def call_number(number):
   account = os.environ.get('TWILIO_SID', '')
@@ -37,6 +51,10 @@ def call_number(number):
                             url = ngrok_url + "/new")
   return call.sid
  
+# ---------------
+# Routes
+# ---------------
+
 @app.route("/", methods=['GET', 'POST'])
 def hello():
     from_number = request.values.get('From', None)
@@ -67,13 +85,16 @@ def say():
   callid = request.values.get('CallSid', '')
   global text1
   global text2
+
   if caller1 == callid and text1 != "":
-    # Translate text with Yandex
-    resp.say(text1)
+    if lang1 != lang2:
+      text1 = translate_text(text1, lang2, lang1)
+    resp.say(text1, language=lang1)
     text1 = ""
   elif caller2 == callid and text2 != "":
-    # Translate text with Yandex
-    resp.say(text2)
+    if lang1 != lang2:
+      text2 = translate_text(text1, lang1, lang2)
+    resp.say(text2, language=lang2)
     text2 = ""
   else:
     resp.redirect(url="/wait")
