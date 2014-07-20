@@ -70,10 +70,9 @@ def translate_text(phrase, from_lang='en', dest_lang='es'):
 def call_number(number):
   global client
   twilio_number = os.environ.get('TWILIO_NUMBER', '')
-  ngrok_url = os.environ.get('TWILIO_NGROK', '')
   call = client.calls.create(to = number,
                             from_ = twilio_number,
-                            url = ngrok_url + "/call")
+                            url = "http://langutalk.herokuapp.com/call")
   return call.sid
  
 # ---------------
