@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
+
 # ---------------
 # Imports
 # ---------------
 
-from __future__ import with_statement   # Only necessary for Python 2.5
+from __future__ import with_statement, unicode_literals   # Only necessary for Python 2.5
 import os
 import json
 from flask import Flask, request, redirect
@@ -16,13 +18,6 @@ import requests
 # ---------------
 
 app = Flask(__name__)
-
-# log to stderr
-import logging
-from logging import StreamHandler
-file_handler = StreamHandler()
-app.logger.setLevel(logging.INFO)  # set the desired logging level here
-app.logger.addHandler(file_handler)
  
 callers = {
     "+17875663317": "Christian",
@@ -30,8 +25,8 @@ callers = {
     "+17874629666": "Abimael"
 }
 
-lang1 = "es"
-lang2 = "en"
+lang1 = ""
+lang2 = ""
 caller1 = ""
 caller2 = ""
 text1 = ""
@@ -97,10 +92,41 @@ def hello():
     # Greet the caller by name
     resp.say("Hello " + caller)
     # Gather digits.
-    with resp.gather(numDigits=10, action="/handle-key", method="POST") as g:
-        g.say("""Enter a new number to call with the other twilio number.""")
+    with resp.gather(numDigits=1, action="/setlang", method="POST") as g:
+      g.say("For English, press one.")
+      g.say('Para Español, presione dos', language='es')
  
     return str(resp)
+
+@app.route("/setlang", methods=['GET', 'POST'])
+def setlang():
+  resp = twilio.twiml.Response()
+  callid = request.values.get('CallSid', None)
+  digit_pressed = request.values.get('Digits', None)
+
+  if callid == caller1:
+    global lang1
+    if digit_pressed == "1":
+      lang1 = "en"
+      message = "Enter a new number to call with the other twilio number."
+    elif digit_pressed == "2":
+      lang1 = "es"
+      message = "Ingrese un número telefónico para llamar."
+    with resp.gather(numDigits=10, action="/handle-key", method="POST") as g:
+      g.say(message, language=lang1)
+
+  elif callid == caller2:
+    global lang2
+    if digit_pressed == "1":
+      lang2 = "en"
+      message = "Press one anytime to respond with a message"
+    elif digit_pressed == "2":
+      lang2 = "es"
+      message = "Presione uno en cualquier momento para responder con un mensaje."
+      resp.say(message, language=lang2)
+
+  resp.redirect('/wait')
+  return str(resp)
 
 @app.route('/say', methods=['GET', 'POST'])
 def say():
@@ -162,7 +188,6 @@ def record():
 
   # if caller din't pressed anithing redirect 
   else:
-    print "Nadie hablo. Estan charriando"
     resp.redirect('/wait')
     return str(resp)
 
@@ -173,53 +198,56 @@ def transcribe():
 
   callid = request.values.get('CallSid', None)
   if callid == caller1:
-    transcribed = speech_to_text(recording)
+    transcribed = speech_to_text(recording, lang1)
     global text2
     text2 = transcribed
+
+    if lang1 == 'en':
+      message = "Message has been sent"
+    elif lang1 == 'es':
+      message = "El mensaje se ha enviado"
+    resp.say("El mensaje se ha enviado", language=lang1)
+
   elif callid == caller2:
-    transcribed = speech_to_text(recording, "es")
+    transcribed = speech_to_text(recording, lang2)
     global text1
     text1 = transcribed
+    if lang2 == 'en':
+      message = "Message has been sent"
+    elif lang2 == 'es':
+      message = "El mensaje se ha enviado"
+    resp.say("El mensaje se ha enviado", language=lang2)
 
-  resp.say("Message has been sent")
   resp.redirect('/wait')
   return str(resp)
 
 @app.route('/call', methods=['GET', 'POST'])
 def call():
   resp = twilio.twiml.Response()
-  resp.pause(length="5")
-  resp.say('Press one anytime to respond with a message')
-  resp.redirect('/wait')
+  with resp.gather(numDigits=1, action="/setlang", method="POST") as g:
+    g.say("For English, press one.")
+    g.say('Para Español, presione dos', language='es')
   return str(resp)
 
 @app.route("/handle-key", methods=['GET', 'POST'])
 def handle_key():
-    """Handle key press from a user."""
- 
     digit_pressed = request.values.get('Digits', None)
     resp = twilio.twiml.Response()
     called_res = call_number(digit_pressed)
-    resp.say("Calling new number.")
-    resp.pause(length="10")
-    resp.say('Press one anytime to respond with a message')
+    if lang1 == 'en':
+      message1 = "Calling new number"
+      message2 = "Press one anytime to respond with a message"
+    elif lang1 == 'es':
+      message1 = "Llamando el número nuevo"
+      message2 = "Presione uno en cualquier momento para responder con un mensaje"
+
+    resp.say(message1, language=lang1)
+    resp.pause(length="5")
+    resp.say(message2, language=lang1)
     global caller2
     caller2 = called_res
     resp.redirect('/wait')
     return str(resp)
-
-
-@app.route("/handle-transcribed", methods=['GET', 'POST'])
-def handle_transcribed(caller):
-  """Print the transcribed text and say it back to the user"""
-  print "Handle transcribeeeeo"
-  if caller == "1":
-    global text2
-    text2 = "Caller 1 spoke"
-
-  elif caller == "2":
-    global text1
-    text1 = "Caller 2 spoke"
 
 if __name__ == '__main__':
   app.run()
