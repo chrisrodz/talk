@@ -16,6 +16,13 @@ import requests
 # ---------------
 
 app = Flask(__name__)
+
+# log to stderr
+import logging
+from logging import StreamHandler
+file_handler = StreamHandler()
+app.logger.setLevel(logging.INFO)  # set the desired logging level here
+app.logger.addHandler(file_handler)
  
 callers = {
     "+17875663317": "Christian",
@@ -23,7 +30,7 @@ callers = {
     "+17874629666": "Abimael"
 }
 
-lang1 = "en"
+lang1 = "es"
 lang2 = "en"
 caller1 = ""
 caller2 = ""
@@ -36,7 +43,7 @@ att_key = os.environ.get('ATT_KEY', '')
 # Helpers
 # ---------------
 
-def speech_to_text(speech_url):
+def speech_to_text(speech_url, lang=None):
   data = requests.get(speech_url)
   headers = {
     "Authorization": "Bearer " + att_key,
@@ -44,10 +51,16 @@ def speech_to_text(speech_url):
     "Content-Type": "audio/x-wav",
     "X-SpeechContext": "Generic",
     "Connection": "keep-alive",
-    "Content-Language": "es-US"
   }
+  if lang:
+    headers["Content-Language"] = "es-US"
   text = requests.post("https://api.att.com/speech/v3/speechToText", headers=headers, data=data.content)
-  return json.loads(text.content)[u'Recognition'][u'NBest'][0][u'ResultText']
+  print text.content
+  att_data = json.loads(text.content)
+  try:
+    return json.loads(text.content)[u'Recognition'][u'NBest'][0][u'ResultText']
+  except KeyError:
+    return "Error"
 
 def translate_text(phrase, from_lang='en', dest_lang='es'):
   url = "https://translate.yandex.net/api/v1.5/tr.json/translate?key=%s&lang=%s-%s&text=%s" % (yandex_key, from_lang, dest_lang, quote_plus(phrase))
@@ -119,16 +132,9 @@ def wait():
   account = os.environ.get('TWILIO_SID', '')
   token   = os.environ.get('TWILIO_TOKEN', '')
   client  = TwilioRestClient(account, token)
-  call    = client.calls.get(caller2)
-  sid     = request.values.get('CallSid', None)
-
-  if call.status == "ringing":
-    resp.say('calling')
-    resp.pause(length="10")
-    resp.say('Press one anytime to respond with a message')
-    resp.redirect('/wait')
-
-
+  sid = request.values.get('CallSid', None)
+  print text1
+  print text2
   if sid == caller1:
     if text1 != "": 
       resp.redirect('/say')
@@ -140,7 +146,6 @@ def wait():
     elif text2 == "":
       resp.gather(numDigits="1", action="/record", method="POST", timeout="5")
   resp.redirect('/wait')
-  print "wait"
   return str(resp)
 
 @app.route('/record', methods=['GET', 'POST'])
@@ -150,10 +155,8 @@ def record():
   if digit_pressed == "1":
     caller = request.values.get('CallSid', None)
 
-    resp.say("Say you message after the tone.")
-
     # record
-    resp.record(timeout="1" , action="/transcribe")
+    resp.record(timeout="2" , action="/transcribe", maxLength="3")
 
     return str(resp)
 
@@ -167,13 +170,14 @@ def record():
 def transcribe():
   resp = twilio.twiml.Response()
   recording = request.values.get('RecordingUrl', None)
-  transcribed = speech_to_text(recording)
 
   callid = request.values.get('CallSid', None)
   if callid == caller1:
+    transcribed = speech_to_text(recording)
     global text2
     text2 = transcribed
   elif callid == caller2:
+    transcribed = speech_to_text(recording, "es")
     global text1
     text1 = transcribed
 
@@ -195,9 +199,10 @@ def handle_key():
  
     digit_pressed = request.values.get('Digits', None)
     resp = twilio.twiml.Response()
-    resp.say("Calling new number.")
     called_res = call_number(digit_pressed)
-
+    resp.say("Calling new number.")
+    resp.pause(length="10")
+    resp.say('Press one anytime to respond with a message')
     global caller2
     caller2 = called_res
     resp.redirect('/wait')
@@ -216,5 +221,5 @@ def handle_transcribed(caller):
     global text1
     text1 = "Caller 2 spoke"
 
-if __name__ == "__main__":
-    app.run(debug=True)
+if __name__ == '__main__':
+  app.run()
