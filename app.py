@@ -102,21 +102,28 @@ def say():
 @app.route('/wait', methods=['GET', 'POST'])
 def wait():
   resp = twilio.twiml.Response()
-  resp.say('Hello')
-  if (request.values.get('CallSid', None) == caller1):
-    # if text empty -> /say
+  
+  account = os.environ.get('TWILIO_SID', '')
+  token   = os.environ.get('TWILIO_TOKEN', '')
+  client  = TwilioRestClient(account, token)
+  call    = client.calls.get(caller2)
+  sid     = request.values.get('CallSid', None)
+
+  if call.status == "ringing":
+    resp.say('calling')
+    resp.pause(length=8)
+    resp.redirect('/wait')
+  if sid == caller1:
     if text1 != "": 
       resp.redirect('/say')
-    # <gather> -> record 
     elif text1 == "":
       with resp.gather(numDigits=1, action="/record", method="POST", timeout=5) as g:
         g.say("""Press one to start your message.""")
       resp.redirect('/wait')
-  elif(request.values.get('CallSid', None) == caller2):
+  elif sid == caller2:
     if text2 != "":
       print "Nos fuimos pa say"
       resp.redirect('/say')
-    # <gather> -> record 
     elif text2 == "":
       with resp.gather(numDigits="1", action="/record", method="POST", timeout="5") as g:
         g.say("""Press one to start your message.""")    
@@ -156,8 +163,6 @@ def record():
 @app.route('/call', methods=['GET', 'POST'])
 def call():
   resp = twilio.twiml.Response()
-  global caller2
-  caller2 = request.values.get('CallSid', None)
   resp.redirect('/wait')
   return str(resp)
 
@@ -170,6 +175,9 @@ def handle_key():
     resp.say("Calling new number.")
 
     called_res = call_number(digit_pressed)
+
+    global caller2
+    caller2 = called_res
     resp.redirect('/wait')
     return str(resp)
 
