@@ -111,22 +111,21 @@ def wait():
 
   if call.status == "ringing":
     resp.say('calling')
-    resp.pause(length=10)
+    resp.pause(length="10")
     resp.say('Press one anytime to respond with a message')
     resp.redirect('/wait')
   if sid == caller1:
     if text1 != "": 
       resp.redirect('/say')
     elif text1 == "":
-      with resp.gather(numDigits="1", action="/record", method="POST", timeout="5") as g:
-        resp.redirect('/wait')
+      resp.gather(numDigits="1", action="/record", method="POST", timeout="5")
   elif sid == caller2:
     if text2 != "":
       print "Nos fuimos pa say"
       resp.redirect('/say')
     elif text2 == "":
-      with resp.gather(numDigits="1", action="/record", method="POST", timeout="5") as g:
-        resp.redirect('/wait')
+      resp.gather(numDigits="1", action="/record", method="POST", timeout="5")
+  resp.redirect('/wait')
   print "wait"
   return str(resp)
 
@@ -163,6 +162,7 @@ def record():
 @app.route('/call', methods=['GET', 'POST'])
 def call():
   resp = twilio.twiml.Response()
+  resp.pause(length="5")
   resp.say('Press one anytime to respond with a message')
   resp.redirect('/wait')
   return str(resp)
