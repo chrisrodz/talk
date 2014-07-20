@@ -10,6 +10,7 @@ import json
 from flask import Flask, request, redirect
 from twilio.rest import TwilioRestClient
 import twilio.twiml
+from twilio.util import TwilioCapability
 from urllib import quote_plus
 import requests
 
@@ -33,6 +34,10 @@ text1 = ""
 text2 = ""
 yandex_key = os.environ.get('YANDEX_API_KEY', '')
 att_key = os.environ.get('ATT_KEY', '')
+
+account = os.environ.get('TWILIO_SID', '')
+token   = os.environ.get('TWILIO_TOKEN', '')
+client  = TwilioRestClient(account, token)
 
 # ---------------
 # Helpers
@@ -63,12 +68,9 @@ def translate_text(phrase, from_lang='en', dest_lang='es'):
   return json.loads(translation.content)['text'][0]
 
 def call_number(number):
-  account = os.environ.get('TWILIO_SID', '')
-  token = os.environ.get('TWILIO_TOKEN', '')
+  global client
   twilio_number = os.environ.get('TWILIO_NUMBER', '')
   ngrok_url = os.environ.get('TWILIO_NGROK', '')
-  client = TwilioRestClient(account, token)
-
   call = client.calls.create(to = number,
                             from_ = twilio_number,
                             url = ngrok_url + "/call")
@@ -154,10 +156,6 @@ def say():
 @app.route('/wait', methods=['GET', 'POST'])
 def wait():
   resp = twilio.twiml.Response()
-  
-  account = os.environ.get('TWILIO_SID', '')
-  token   = os.environ.get('TWILIO_TOKEN', '')
-  client  = TwilioRestClient(account, token)
   sid = request.values.get('CallSid', None)
   print text1
   print text2
@@ -248,6 +246,16 @@ def handle_key():
     caller2 = called_res
     resp.redirect('/wait')
     return str(resp)
+
+@app.route('/capability', methods=['GET', 'POST'])
+def capability():
+  global token
+  global account
+  capability = TwilioCapability(account, token)
+  capability.allow_client_outgoing("APe4454b16035e7e581dd3a0863d7ea465")
+  token = capability.generate()
+  print token
+  return str(token)
 
 if __name__ == '__main__':
   app.run()
