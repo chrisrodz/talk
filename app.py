@@ -30,10 +30,24 @@ caller2 = ""
 text1 = ""
 text2 = ""
 yandex_key = os.environ.get('YANDEX_API_KEY', '')
+att_key = os.environ.get('ATT_KEY', '')
 
 # ---------------
 # Helpers
 # ---------------
+
+def speech_to_text(speech_url):
+  data = requests.get(speech_url)
+  headers = {
+    "Authorization": "Bearer " + att_key,
+    "Content-Length": data.headers['content-length'],
+    "Content-Type": "audio/x-wav",
+    "X-SpeechContext": "Generic",
+    "Connection": "keep-alive",
+    "Content-Language": "es-US"
+  }
+  text = requests.post("https://api.att.com/speech/v3/speechToText", headers=headers, data=data.content)
+  return json.loads(text.content)[u'Recognition'][u'NBest'][0][u'ResultText']
 
 def translate_text(phrase, from_lang='en', dest_lang='es'):
   url = "https://translate.yandex.net/api/v1.5/tr.json/translate?key=%s&lang=%s-%s&text=%s" % (yandex_key, from_lang, dest_lang, quote_plus(phrase))
