@@ -138,13 +138,15 @@ def say():
 
   if caller1 == callid:
     if len(text1) > 0:
+      text = text1.pop(0)
       if lang1 != lang2:
-        text = translate_text(text1.pop(0), lang2, lang1)
+        text = translate_text(text, lang2, lang1) 
       resp.say(text, language=lang1)
   elif caller2 == callid:
     if len(text2) > 0:
+      text = text2.pop(0)
       if lang1 != lang2:
-        text = translate_text(text2.pop(0), lang1, lang2)
+        text = translate_text(text, lang1, lang2)
       resp.say(text, language=lang2)
 
   resp.redirect("/wait")
