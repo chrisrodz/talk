@@ -30,8 +30,8 @@ lang1 = ""
 lang2 = ""
 caller1 = ""
 caller2 = ""
-text1 = ""
-text2 = ""
+text1 = list()
+text2 = list()
 yandex_key = os.environ.get('YANDEX_API_KEY', '')
 att_key = os.environ.get('ATT_KEY', '')
 
@@ -138,17 +138,15 @@ def say():
   global text2
 
   if caller1 == callid:
-    if text1:
+    if len(text1) > 0:
       # if lang1 != lang2:
       #   text1 = translate_text(text1, lang2, lang1)
-      resp.say(text1, language=lang1)
-      text1 = ""
+      resp.say(text1.pop(0), language=lang1)
   elif caller2 == callid:
-    if text2:
+    if len(text2) > 0:
       # if lang1 != lang2:
       #   text2 = translate_text(text1, lang1, lang2)
-      resp.say(text2, language=lang2)
-      text2 = ""
+      resp.say(text2.pop(0), language=lang2)
 
   resp.redirect("/wait")
   return str(resp)
@@ -160,14 +158,14 @@ def wait():
   print text1
   print text2
   if sid == caller1:
-    if text1 != "": 
+    if len(text1) != 0: 
       resp.redirect('/say')
-    elif text1 == "":
+    elif len(text1) == 0:
       resp.gather(numDigits="1", action="/record", method="POST", timeout="5")
   elif sid == caller2:
-    if text2 != "":
+    if len(text2) != 0:
       resp.redirect('/say')
-    elif text2 == "":
+    elif len(text2) == 0:
       resp.gather(numDigits="1", action="/record", method="POST", timeout="5")
   resp.redirect('/wait')
   return str(resp)
@@ -198,7 +196,7 @@ def transcribe():
   if callid == caller1:
     transcribed = speech_to_text(recording, lang1)
     global text2
-    text2 = transcribed
+    text2.append(transcribed)
 
     if lang1 == 'en':
       message = "Message has been sent"
@@ -209,7 +207,8 @@ def transcribe():
   elif callid == caller2:
     transcribed = speech_to_text(recording, lang2)
     global text1
-    text1 = transcribed
+    text1.append(transcribed)
+
     if lang2 == 'en':
       message = "Message has been sent"
     elif lang2 == 'es':
@@ -258,4 +257,4 @@ def capability():
   return str(token)
 
 if __name__ == '__main__':
-  app.run()
+  app.run(debug=True)
