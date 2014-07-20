@@ -14,6 +14,7 @@ import requests
 # ---------------
 # Init
 # ---------------
+
 app = Flask(__name__)
  
 callers = {
@@ -57,6 +58,7 @@ def call_number(number):
 
 @app.route("/", methods=['GET', 'POST'])
 def hello():
+    print request.values
     from_number = request.values.get('From', None)
     if from_number in callers:
         caller = callers[from_number]
@@ -108,7 +110,30 @@ def wait():
 @app.route('/record', methods=['GET', 'POST'])
 def record():
   print "record"
-  return "record"
+  digit_pressed = request.values.get('Digits', None)
+
+  if digit_pressed == "1":
+    resp = twilio.twiml.Response()
+    caller = request.values.get('CallSid', None)
+
+    resp.say("Say you message after the tone.")
+
+    # record
+    resp.record(timeout = "2" , action = "/wait")
+
+    if(caller == caller1):
+
+      handle_transcribed("1")
+
+    elif(caller == caller2):
+
+      handle_transcribed("2")
+
+    return str(resp)
+
+  # if caller din't pressed anithing redirect 
+  else:
+    return redirect("/wait")
 
 
 ### Tutorial methods
@@ -155,12 +180,16 @@ def handle_recording():
     return str(resp)
 
 @app.route("/handle-transcribed", methods=['GET', 'POST'])
-def handle_transcribed():
+def handle_transcribed(caller):
   """Print the transcribed text and say it back to the user"""
-  text = request.values.get('TranscriptionText')
-  print text
-  return str(text)
 
- 
+  if(caller == "1"):
+    global text2
+    text2 = "Caller 1 speaked"
+
+  elif(caller == "2"):
+    global text2
+    text2 = "Caller 1 speaked"
+
 if __name__ == "__main__":
     app.run(debug=True)
