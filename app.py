@@ -111,28 +111,28 @@ def wait():
 
   if call.status == "ringing":
     resp.say('calling')
-    resp.pause(length=8)
+    resp.pause(length=10)
+    resp.say('Press one anytime to respond with a message')
     resp.redirect('/wait')
   if sid == caller1:
     if text1 != "": 
       resp.redirect('/say')
     elif text1 == "":
-      with resp.gather(numDigits=1, action="/record", method="POST", timeout=5) as g:
-        g.say("""Press one to start your message.""")
-      resp.redirect('/wait')
+      with resp.gather(numDigits="1", action="/record", method="POST", timeout="5") as g:
+        resp.redirect('/wait')
   elif sid == caller2:
     if text2 != "":
       print "Nos fuimos pa say"
       resp.redirect('/say')
     elif text2 == "":
       with resp.gather(numDigits="1", action="/record", method="POST", timeout="5") as g:
-        g.say("""Press one to start your message.""")    
-      resp.redirect('/wait')
+        resp.redirect('/wait')
   print "wait"
   return str(resp)
 
 @app.route('/record', methods=['GET', 'POST'])
 def record():
+
   print "record"
   digit_pressed = request.values.get('Digits', None)
   resp = twilio.twiml.Response()
@@ -163,6 +163,7 @@ def record():
 @app.route('/call', methods=['GET', 'POST'])
 def call():
   resp = twilio.twiml.Response()
+  resp.say('Press one anytime to respond with a message')
   resp.redirect('/wait')
   return str(resp)
 
@@ -173,7 +174,6 @@ def handle_key():
     digit_pressed = request.values.get('Digits', None)
     resp = twilio.twiml.Response()
     resp.say("Calling new number.")
-
     called_res = call_number(digit_pressed)
 
     global caller2
@@ -192,7 +192,7 @@ def handle_transcribed(caller):
 
   elif caller == "2":
     global text1
-    text1 = "Caller 1 spoke"
+    text1 = "Caller 2 spoke"
 
 if __name__ == "__main__":
     app.run(debug=True)
