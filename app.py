@@ -188,8 +188,8 @@ def handle_transcribed(caller):
     text2 = "Caller 1 speaked"
 
   elif(caller == "2"):
-    global text2
-    text2 = "Caller 1 speaked"
+    global text1
+    text1 = "Caller 1 speaked"
 
 if __name__ == "__main__":
     app.run(debug=True)
