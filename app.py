@@ -181,7 +181,7 @@ def record():
 
     return str(resp)
 
-  # if caller din't pressed anithing redirect 
+  # if caller digitn't pressed anithing redirect 
   else:
     resp.redirect('/wait')
     return str(resp)
@@ -198,9 +198,9 @@ def transcribe():
     text2.append(transcribed)
 
     if lang1 == 'en':
-      message = "Message has been sent"
+      message = "Done"
     elif lang1 == 'es':
-      message = "El mensaje se ha enviado"
+      message = "Enviado"
     resp.say(message, language=lang1)
 
   elif callid == caller2:
@@ -209,9 +209,9 @@ def transcribe():
     text1.append(transcribed)
 
     if lang2 == 'en':
-      message = "Message has been sent"
+      message = "Done"
     elif lang2 == 'es':
-      message = "El mensaje se ha enviado"
+      message = "Enviado"
     resp.say(message, language=lang2)
 
   resp.redirect('/wait')
