@@ -52,7 +52,7 @@ def speech_to_text(speech_url, lang=None):
     "X-SpeechContext": "Generic",
     "Connection": "keep-alive",
   }
-  if lang:
+  if lang == 'es':
     headers["Content-Language"] = "es-US"
   text = requests.post("https://api.att.com/speech/v3/speechToText", headers=headers, data=data.content)
   print text.content
@@ -63,7 +63,7 @@ def speech_to_text(speech_url, lang=None):
     return "Error"
 
 def translate_text(phrase, from_lang='en', dest_lang='es'):
-  url = "https://translate.yandex.net/api/v1.5/tr.json/translate?key=%s&lang=%s-%s&text=%s" % (yandex_key, from_lang, dest_lang, quote_plus(phrase))
+  url = "https://translate.yandex.net/api/v1.5/tr.json/translate?key=%s&lang=%s-%s&text=%s" % (yandex_key, from_lang, dest_lang, quote_plus(phrase.encode('utf8')))
   translation = requests.get(url)
   return json.loads(translation.content)['text'][0]
 
@@ -125,7 +125,7 @@ def setlang():
     elif digit_pressed == "2":
       lang2 = "es"
       message = "Presione uno en cualquier momento para responder con un mensaje."
-      resp.say(message, language=lang2)
+    resp.say(message, language=lang2)
 
   resp.redirect('/wait')
   return str(resp)
@@ -139,14 +139,14 @@ def say():
 
   if caller1 == callid:
     if len(text1) > 0:
-      # if lang1 != lang2:
-      #   text1 = translate_text(text1, lang2, lang1)
-      resp.say(text1.pop(0), language=lang1)
+      if lang1 != lang2:
+        text = translate_text(text1.pop(0), lang2, lang1)
+      resp.say(text, language=lang1)
   elif caller2 == callid:
     if len(text2) > 0:
-      # if lang1 != lang2:
-      #   text2 = translate_text(text1, lang1, lang2)
-      resp.say(text2.pop(0), language=lang2)
+      if lang1 != lang2:
+        text = translate_text(text2.pop(0), lang1, lang2)
+      resp.say(text, language=lang2)
 
   resp.redirect("/wait")
   return str(resp)
@@ -202,7 +202,7 @@ def transcribe():
       message = "Message has been sent"
     elif lang1 == 'es':
       message = "El mensaje se ha enviado"
-    resp.say("El mensaje se ha enviado", language=lang1)
+    resp.say(message, language=lang1)
 
   elif callid == caller2:
     transcribed = speech_to_text(recording, lang2)
@@ -213,7 +213,7 @@ def transcribe():
       message = "Message has been sent"
     elif lang2 == 'es':
       message = "El mensaje se ha enviado"
-    resp.say("El mensaje se ha enviado", language=lang2)
+    resp.say(message, language=lang2)
 
   resp.redirect('/wait')
   return str(resp)
